@@ -58,7 +58,8 @@ def generateExpected(reps, A, mu, sigma):
 		expected.append(sigma)
 	return expected
 
-outputDf = pd.DataFrame({"params":[0], "sigma":[0]})
+nmodes = int(sys.argv[2])
+outputDf = pd.DataFrame({"placeholder":pd.Series(range(0,nmodes*3))})
 figure, axis = plt.subplots(1, len(angle_df.columns), figsize=(len(angle_df.columns)*10,6))
 
 for column in range(0,len(angle_df.columns)):
@@ -101,7 +102,7 @@ for column in range(0,len(angle_df.columns)):
 		expMu = x[np.where(y == max(y))[0][0]]
 		expSig = tstd(x)
 
-		for n in range(0, int(sys.argv[2])):
+		for n in range(0, nmodes):
 			expected = generateExpected(n+1, expA, expMu, expSig)
 			try:
 				curve_fit(locals()[modals[n]], bins, y)
@@ -124,8 +125,14 @@ for column in range(0,len(angle_df.columns)):
 		sigmaB = np.sqrt(np.diag(covB))
 		print("Modal with best square residual sum was %s:" % modals[bestResidual])
 		# print(pd.DataFrame(data={'params': paramsB, 'sigma': sigmaB}, index=locals()[modals[bestResidual]].__code__.co_varnames[1:]))
-		outputDf = pd.concat([outputDf, pd.DataFrame(data={'params': [angle_df.columns.values[column]], 'sigma': bestResidual})])
-		outputDf = pd.concat([outputDf, pd.DataFrame(data={'params': paramsB, 'sigma': sigmaB}, index=locals()[modals[bestResidual]].__code__.co_varnames[1:])])
+
+		outputDf[str([angle_df.columns.values[column]][0]) + " param"] = pd.Series(paramsB)
+		outputDf[str([angle_df.columns.values[column]][0]) + " sigma"] = pd.Series(sigmaB)
+
+		#outputDf.insert(len(outputDf.columns), str([angle_df.columns.values[column]]) + " param", paramsB)
+		#outputDf.insert(len(outputDf.columns), str([angle_df.columns.values[column]]) + " sigma", sigmaB)
+
+		#outputDf.insert(pd.concat([outputDf, pd.DataFrame(data={'params': paramsB, 'sigma': sigmaB}, index=locals()[modals[bestResidual]].__code__.co_varnames[1:])]))
 
 		axis[column].plot(bins, locals()[modals[bestResidual]](bins, *paramsB), color='orange', lw=1, label=modals[bestResidual])
 		for i in range(0, bestResidual+1):
@@ -136,6 +143,8 @@ for column in range(0,len(angle_df.columns)):
 
 figure.savefig("GaussianPlots.png")
 
+outputDf.drop(labels='placeholder', axis=1, inplace=True)
+outputDf.fillna(0)
 file_out = open(sys.argv[3], 'w')
 file_out.write(outputDf.to_string())
 file_out.close()
