@@ -9,7 +9,10 @@ import csv, sys
 NUMBINS = 120
 modals = ['gauss', 'twomodal', 'threemodal', 'fourmodal', 'fivemodal', 'sixmodal', 'sevenmodal', 'eightmodal', 'ninemodal', 'tenmodal']
 
-# TODO: Automate for multiple datasets
+#Takes in:
+# 1) Input angles in .tsv format
+# 2) Maximum number of Gaussians
+# 3) Output text file to be written
 
 # Read in data
 with open(sys.argv[1]) as f:
@@ -18,7 +21,7 @@ with open(sys.argv[1]) as f:
 
 # Definition of 1-10 peak gaussians
 def gauss(x, mu, sigma, A):
-    return A*np.exp(-(x-mu)**2/2/sigma**2)
+    return abs(A*np.exp(-(x-mu)**2/2/sigma**2))
 
 def twomodal(x, mu1, sigma1, A1, mu2, sigma2, A2):
     return gauss(x,mu1,sigma1,A1)+gauss(x,mu2,sigma2,A2)
@@ -98,7 +101,7 @@ for column in range(0,len(angle_df.columns)):
 		expMu = x[np.where(y == max(y))[0][0]]
 		expSig = tstd(x)
 
-		for n in range(0,8):
+		for n in range(0, int(sys.argv[2])):
 			expected = generateExpected(n+1, expA, expMu, expSig)
 			try:
 				curve_fit(locals()[modals[n]], bins, y)
@@ -133,6 +136,6 @@ for column in range(0,len(angle_df.columns)):
 
 figure.savefig("GaussianPlots.png")
 
-file_out = open(sys.argv[2], 'w')
+file_out = open(sys.argv[3], 'w')
 file_out.write(outputDf.to_string())
 file_out.close()
